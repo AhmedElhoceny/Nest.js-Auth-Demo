@@ -11,7 +11,6 @@ import { JwtStrategy } from './strategy/JwtStrategy';
   controllers: [AuthController],
   providers: [AuthService , UsersService , JwtStrategy],
   imports : [
-    //PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({})
   ]
 })
