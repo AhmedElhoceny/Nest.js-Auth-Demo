@@ -1,54 +1,56 @@
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
+import { User, userDocument } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
-
-var users : User[]  = [{
-  Id: 1,
-  FullName: 'Ahmed Elhoceny',
-  UserName: 'Elhoceny',
-  PassWord: '$2b$10$H6qtl2O85THr33fc713UA.2u.7OqU5Eb.ZLLiOG8sNYhdcEWBZynC',
-  Email: 'ahmed@gmail.com',
-  Phone: '0102682242'
-}
-]
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from "mongoose";
 
 @Injectable()
 export class UsersService {
+
+  constructor(@InjectModel(User.name) private readonly userModel:Model<userDocument>) {}
+
   async create(createUserDto: CreateUserDto) : Promise<any> {
+
     const saltOrRounds = 10;
     createUserDto.PassWord = await bcrypt.hash(createUserDto.PassWord, saltOrRounds);
-    users.push(createUserDto);
-    return createUserDto;
+
+    var addingUserProcess = await new this.userModel(createUserDto);
+
+    return addingUserProcess.save();
   }
 
   async getUser(userName : string):Promise<any>{
-    let searchedUser = users.find(ele => ele.UserName == userName);
+    // let searchedUser = users.find(ele => ele.UserName == userName);
+
+    let searchedUser = this.userModel.findOne(obj => obj.UserName == userName).exec();
+
     if(searchedUser)
       return searchedUser
     return null;
   }
 
   async findAll():Promise<any> {
-    return users;
+    return this.userModel.find().exec();
   }
 
   async findOne(id: number):Promise<any> {
-    return users.find(ele => ele.Id == id);
+    return this.userModel.findById(id).exec();
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) : Promise<any> {
-    let searchedItemIndex = users.findIndex(ele => ele.Id == id);
-    users[searchedItemIndex].Email = updateUserDto.Email;
-    users[searchedItemIndex].FullName = updateUserDto.FullName;
-    users[searchedItemIndex].Phone = updateUserDto.Phone;
-    users[searchedItemIndex].UserName = updateUserDto.UserName;
-    return updateUserDto;
+    
+    var updatedExistedUser = this.userModel.findOneAndUpdate(obj => obj.Id == id , updateUserDto).exec()
+
+    return updatedExistedUser;
   }
 
-  async remove(id: number) : Promise<any> {
-    let searchedItemIndex = users.findIndex(ele => ele.Id == id);
-    users.splice(searchedItemIndex , 1);
+  async remove(id: string) : Promise<any> {
+    
+    let searchedItem =await this.userModel.deleteOne({id:id}).exec();
+
+    return searchedItem;
+
   }
 }
